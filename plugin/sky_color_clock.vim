@@ -82,6 +82,9 @@ let g:sky_color_clock#openweathermap_city_id = get(g:, 'sky_color_clock#openweat
 " for preload.
 augroup sky_color_clock
     autocmd ColorScheme * call sky_color_clock#statusline()
+    if !empty(g:sky_color_clock#openweathermap_api_key)
+        autocmd ColorScheme * call sky_color_clock#define_temperature_highlight()
+    endif
 augroup END
 
 
