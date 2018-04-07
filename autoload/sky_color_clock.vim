@@ -341,7 +341,7 @@ function! s:get_current_weather_info() abort
 endfunction
 
 
-function! s:define_temperature_highlight() abort
+function! s:define_temperature_highlight(...) abort
     try
         let weather_res = s:get_current_weather_info()
         if type(weather_res) == v:t_string
@@ -364,6 +364,9 @@ endfunction
 
 if !empty(g:sky_color_clock#openweathermap_api_key)
     call s:define_temperature_highlight()
+    if has('timers')
+        call timer_start(1000 * 60 * 15, function('s:define_temperature_highlight'), {'repeat': -1})
+    endif
 endif
 
 let s:enable_test = 0
