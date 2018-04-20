@@ -214,7 +214,18 @@ function! s:pick_bg_color(timestamp) abort
     let t = sec / 60.0
     let x = ((t + min) / 60.0) + hour
 
-    return s:make_gradient(g:sky_color_clock#color_stops, x)
+    let bg_color = s:make_gradient(g:sky_color_clock#color_stops, x)
+
+    if exists('s:weather_info')
+        let cloudiness = s:weather_info.clouds.all / 100.0
+        let [h, s, l] = s:rgb_to_hsl(s:parse_rgb(bg_color))
+        let s = s - (s * cloudiness * 0.9)
+        let l = l + cloudiness * 0.15
+        let l = (l > 0.95) ? 0.95 : l
+        let bg_color = s:to_rgb_string(s:hsl_to_rgb([h, s, l]))
+    endif
+
+    return bg_color
 endfunction
 
 
@@ -254,14 +265,16 @@ function! s:get_sky_colors(timestamp) abort
 endfunction
 
 
+function! s:apply_sky_colors(timestamp) abort
+    let [fg, bg, fg_t, bg_t] = s:get_sky_colors(a:timestamp)
+    execute printf('hi SkyColorClock guifg=%s guibg=%s ctermfg=%d ctermbg=%d ', fg, bg, fg_t, bg_t)
+endfunction
+
+
 let s:last_update_timestamp = localtime()
 let s:statusline_cache = ''
 function! sky_color_clock#statusline() abort
-    if exists('g:sky_color_clock#timestamp_force_override')
-        let now = g:sky_color_clock#timestamp_force_override
-    else
-        let now = localtime()
-    endif
+    let now = get(g:, 'sky_color_clock#timestamp_force_override', localtime())
 
     let statusline = strftime(g:sky_color_clock#datetime_format, now)
 
@@ -270,10 +283,7 @@ function! sky_color_clock#statusline() abort
     endif
     let s:last_update_timestamp = now
 
-    let [fg, bg, fg_t, bg_t] = s:get_sky_colors(now)
-
-    " Update highlight.
-    execute printf('hi SkyColorClock guifg=%s guibg=%s ctermfg=%d ctermbg=%d ', fg, bg, fg_t, bg_t)
+    call s:apply_sky_colors(now)
 
     if g:sky_color_clock#enable_emoji_icon != 0
         let statusline = printf("%s %s", s:get_emoji_moonphase(now), statusline)
@@ -343,15 +353,19 @@ endfunction
 
 function! sky_color_clock#define_temperature_highlight(...) abort
     try
-        call s:fetch_current_weather_info(function('s:apply_temperature_highlight'))
+        call s:fetch_current_weather_info(function('s:apply_current_weather_info'))
     catch /.*/
     endtry
 endfunction
 
 
-function! s:apply_temperature_highlight(json_string) abort
-    let weather_dict = eval(a:json_string)
-    let temp = weather_dict.main.temp
+function! s:apply_current_weather_info(json_string) abort
+    let s:weather_info = eval(a:json_string)
+
+    let now = get(g:, 'sky_color_clock#timestamp_force_override', localtime())
+    call s:apply_sky_colors(now)
+
+    let temp = s:weather_info.main.temp
 
     let bg = s:make_gradient(g:sky_color_clock#temperature_color_stops, temp)
     let bg_t = s:to_ansi256_color(bg)
