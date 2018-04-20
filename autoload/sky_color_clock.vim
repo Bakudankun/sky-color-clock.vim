@@ -320,7 +320,7 @@ function! sky_color_clock#preview() abort
 endfunction
 
 
-function! s:get_current_weather_info() abort
+function! s:fetch_current_weather_info(callback) abort
     if executable('curl')
         let cmd = 'curl --silent '
     elseif executable('wget')
@@ -334,26 +334,23 @@ function! s:get_current_weather_info() abort
                 \ g:sky_color_clock#openweathermap_city_id,
                 \ g:sky_color_clock#openweathermap_api_key)
     if has('job')
-        return job_start(cmd . uri, {'out_cb': function('s:apply_temperature_highlight')})
+        call job_start(cmd . uri, {'out_cb': {ch, out -> a:callback(out)}})
     else
-        return system(cmd . shellescape(uri))
+        call a:callback(system(cmd . shellescape(uri)))
     endif
 endfunction
 
 
 function! sky_color_clock#define_temperature_highlight(...) abort
     try
-        let weather_res = s:get_current_weather_info()
-        if type(weather_res) == v:t_string
-            call s:apply_temperature_highlight(-1, weather_res)
-        endif
+        call s:fetch_current_weather_info(function('s:apply_temperature_highlight'))
     catch /.*/
     endtry
 endfunction
 
 
-function! s:apply_temperature_highlight(ch, out) abort
-    let weather_dict = eval(a:out)
+function! s:apply_temperature_highlight(json_string) abort
+    let weather_dict = eval(a:json_string)
     let temp = weather_dict.main.temp
 
     let bg = s:make_gradient(g:sky_color_clock#temperature_color_stops, temp)
