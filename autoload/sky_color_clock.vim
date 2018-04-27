@@ -298,7 +298,7 @@ function! sky_color_clock#statusline() abort
         if exists('s:weather_info')
             let weather_icon = s:weather_emojis[s:weather_info.weather[0].icon]
             if weather_icon == '🌙'
-                let wather_icon = s:get_emoji_moonphase(now)
+                let weather_icon = s:get_emoji_moonphase(now)
             endif
         else
             let weather_icon = s:get_emoji_moonphase(now)
