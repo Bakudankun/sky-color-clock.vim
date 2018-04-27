@@ -283,19 +283,16 @@ function! s:apply_sky_colors(timestamp) abort
 endfunction
 
 
-let s:last_update_timestamp = localtime()
-let s:statusline_cache = ''
+let s:last_update_timestamp = 0
 function! sky_color_clock#statusline() abort
     let now = get(g:, 'sky_color_clock#timestamp_force_override', localtime())
 
-    let statusline = strftime(g:sky_color_clock#datetime_format, now)
-
-    if statusline ==# strftime(g:sky_color_clock#datetime_format, s:last_update_timestamp) && !empty(s:statusline_cache) && !empty(synIDattr(synIDtrans(hlID('SkyColorClock')), 'fg'))
-        return s:statusline_cache
+    if now > s:last_update_timestamp + 60
+        let s:last_update_timestamp = now
+        call s:apply_sky_colors(now)
     endif
-    let s:last_update_timestamp = now
 
-    call s:apply_sky_colors(now)
+    let statusline = strftime(g:sky_color_clock#datetime_format, now)
 
     if g:sky_color_clock#enable_emoji_icon != 0
         if exists('s:weather_info')
@@ -309,7 +306,6 @@ function! sky_color_clock#statusline() abort
         let statusline = printf("%s %s", weather_icon, statusline)
     endif
 
-    let s:statusline_cache = statusline
     return statusline
 endfunction
 
