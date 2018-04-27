@@ -28,6 +28,18 @@ let s:moonphase_emojis = [
             \ [23.99, '🌗'],
             \ [27.68, '🌘'],
             \ ]
+" Dictionary whose keys are filenames of OpenWeatherMap's weather icons
+let s:weather_emojis = {
+            \ '01d': '☀', '01n': '🌙',
+            \ '02d': '☀', '02n': '🌙',
+            \ '03d': '☁', '03n': '☁',
+            \ '04d': '☁', '04n': '☁',
+            \ '09d': '☔', '09n': '☔',
+            \ '10d': '☔', '10n': '☔',
+            \ '11d': '⚡', '11n': '⚡',
+            \ '13d': '❄', '13n': '❄',
+            \ '50d': '🌁', '50n': '🌁',
+            \ }
 
 
 " https://github.com/Qix-/color-convert/blob/427cbb70540bb9e5b3e94aa3bb9f97957ee5fbc0/conversions.js#L555-L580
@@ -286,7 +298,15 @@ function! sky_color_clock#statusline() abort
     call s:apply_sky_colors(now)
 
     if g:sky_color_clock#enable_emoji_icon != 0
-        let statusline = printf("%s %s", s:get_emoji_moonphase(now), statusline)
+        if exists('s:weather_info')
+            let weather_icon = s:weather_emojis[s:weather_info.weather[0].icon]
+            if weather_icon == '🌙'
+                let wather_icon = s:get_emoji_moonphase(now)
+            endif
+        else
+            let weather_icon = s:get_emoji_moonphase(now)
+        endif
+        let statusline = printf("%s %s", weather_icon, statusline)
     endif
 
     let s:statusline_cache = statusline
