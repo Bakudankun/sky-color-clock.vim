@@ -171,7 +171,7 @@ endfunction
 " https://hail2u.net/blog/software/convert-hex-color-to-functional-color-with-vim.html
 " (string) -> [float].
 function! s:parse_rgb(rgb) abort
-    let rgb = matchlist(a:rgb, '\([0-9A-F]\{2\}\)\([0-9A-F]\{2\}\)\([0-9A-F]\{2\}\)')[1:3]
+    let rgb = matchlist(a:rgb, '\c\([0-9A-F]\{2\}\)\([0-9A-F]\{2\}\)\([0-9A-F]\{2\}\)')[1:3]
     return map(rgb, 'str2nr(v:val, 16) / 255.0')
 endfunction
 
@@ -337,8 +337,8 @@ function! sky_color_clock#preview() abort
 
             let group_name = printf('SkyColorClockPreview%d', cnt)
             execute printf('hi %s guifg=%s guibg=%s ctermfg=%d ctermbg=%d', group_name, fg, bg, fg_t, bg_t)
-            execute printf('syntax keyword %s %s', group_name, escape(str, ' '))
-            execute printf('syntax match %s /%s/', group_name, escape(str, ' '))
+            execute printf('syntax keyword %s %s', group_name, escape(str, '/ '))
+            execute printf('syntax match %s /%s/', group_name, escape(str, '/ '))
 
             let cnt += 1
         endfor
@@ -359,6 +359,10 @@ function! s:fetch_current_weather_info(callback) abort
     let uri = printf('http://api.openweathermap.org/data/2.5/weather?id=%s&appid=%s',
                 \ g:sky_color_clock#openweathermap_city_id,
                 \ g:sky_color_clock#openweathermap_api_key)
+
+    let quote = &shellxquote ==# '"' ?  "'" : '"'
+    let uri = quote.uri.quote
+
     if has('job')
         call job_start(cmd . uri, {'out_cb': {ch, out -> a:callback(out)}})
     else
@@ -371,6 +375,7 @@ function! sky_color_clock#define_temperature_highlight(...) abort
     try
         call s:fetch_current_weather_info(function('s:apply_current_weather_info'))
     catch /.*/
+        " echomsg 'sky-color:exception:'.v:exception
     endtry
 endfunction
 
